@@ -1,0 +1,91 @@
+# Create a video capture object
+video_capture = cv2.VideoCapture(0)
+
+# Check if the video capture object has opened properly
+if video_capture.isOpened():
+    print('Success.')
+else:
+    print('Error accessing the web camera.')
+
+# Create a kernel for background erosion
+kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (8, 8))
+
+# Specify colors for image processing
+red_color = (0, 0, 255)
+yellow_color = (0, 255, 255)
+blue_color = (255, 0, 0)
+
+# Create a KNN backgraound subtraction object
+background_subtractor = cv2.createBackgroundSubtractorKNN(history=200)
+
+# Get the necessary video properties
+frame_width = int(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+frame_height = int(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+frame_fps = int(video_capture.get(cv2.CAP_PROP_FPS))
+frame_codec = video_capture.get(cv2.CAP_PROP_FOURCC)
+
+# Calculate the size of the frame
+frame_size = (frame_width, frame_height)
+
+# Calculate the size of a new frame
+new_frame_size = (int(frame_width * 2), int(frame_height))
+
+# Create a video writer object
+video_writer = cv2.VideoWriter('Webcam_test.mp4', cv2.VideoWriter_fourcc(*'FMP4'), 30, new_frame_size)
+
+# Process the webcam stream
+while True:
+    retval, frame = video_capture.read()
+    
+    # Mirror the webcam stream
+    frame = cv2.flip(frame, 1)
+    
+    # Break the loop if there are no frames left
+    if not retval:
+        cv2.destroyAllWindows()
+        video_capture.release()
+        break
+    
+    # Specify the keyboard input to break the loop
+    key = cv2.waitKey(1)
+    
+    if key == 27 or key == ord('q'):
+        cv2.destroyAllWindows()
+        video_capture.release()
+        break
+    
+    # Process the webcam stream
+    # Subtract the background from the stream
+    foreground_mask = background_subtractor.apply(frame)
+    
+    # Erode the frame
+    foreground_mask_eroded = cv2.erode(foreground_mask, kernel)
+    
+    # Find non-zero pixels in the frame
+    motion_area = cv2.findNonZero(foreground_mask_eroded)
+    
+    # Identify properties to draw bounding boxes
+    x, y, w, h = cv2.boundingRect(motion_area)
+    
+    if motion_area is not None:
+        cv2.rectangle(frame, (x, y), (x + w, y + h), yellow_color, thickness=3, lineType=cv2.LINE_AA)
+    
+    # Convert the grayscale image to BGR
+    frame_foreground_mask_eroded = cv2.cvtColor(foreground_mask_eroded, cv2.COLOR_GRAY2BGR)
+    
+    # Concatenate two frames together
+    frame_composite = np.hstack([frame_foreground_mask_eroded, frame])
+    
+    # Add the text
+    cv2.putText(frame_composite, 'KNN Background Subtraction & Motion Detection', (10, 25),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 1, cv2.LINE_AA)
+    
+    # Display the webcam stream
+    cv2.imshow('Webcam_test.mp4', frame_composite)
+    
+    # Write the stream to a file
+    video_writer.write(frame_composite)
+
+# Release video reader and writer objects
+video_capture.release()
+video_writer.release()
