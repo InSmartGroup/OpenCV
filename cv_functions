@@ -1,0 +1,89 @@
+# Display 1 image
+def show_1img(image, name='Source image', fig_x=4, fig_y=4, axis=None):
+"""This function displays 1 image using matplotlib.
+It takes an image name as optional argument."""
+    plt.figure(figsize=(fig_x, fig_y))
+    
+    plt.title(name)
+    
+    if axis == 'off':
+        plt.axis('off')
+    
+    if len(image.shape) == 3:
+        plt.imshow(image[:, :, ::-1])
+    else:
+        plt.imshow(image, cmap='gray')
+        
+
+# Display 2 images
+def show_2img(image1, image2, name1='Source image', name2='Source image', fig_x=8, fig_y=8, axis=None):
+"""This function displays 2 images using matplotlib.
+It takes image names as optional arguments."""
+    
+    plt.figure(figsize=(fig_x, fig_y))
+    
+    image_list = [image1, image2]
+    name_list = [name1, name2]
+    
+    for i, image in enumerate(image_list):
+        plt.subplot(1, int(len(image_list)), i + 1)
+        
+        plt.title(name_list[i])
+        
+        if axis == 'off':
+            plt.axis('off')
+        
+        if len(image.shape) == 3:
+            plt.imshow(image[:, :, ::-1])
+        else:
+            plt.imshow(image, cmap='gray')
+            
+            
+# Display 3 images
+def show_3img(image1, image2, image3, name1='Source image', name2='Source image', name3='Source image', fig_x=12, fig_y=12, axis=None):
+"""This function displays 3 images using matplotlib.
+It takes image names as optional arguments."""
+    
+    plt.figure(figsize=(fig_x, fig_y))
+    
+    image_list = [image1, image2, image3]
+    name_list = [name1, name2, name3]
+    
+    for i, image in enumerate(image_list):
+        plt.subplot(1, int(len(image_list)), i + 1)
+        
+        plt.title(name_list[i])
+        
+        if axis == 'off':
+            plt.axis('off')
+        
+        if len(image.shape) == 3:
+            plt.imshow(image[:, :, ::-1])
+        else:
+            plt.imshow(image, cmap='gray')
+            
+            
+# Display any number of images
+def show_imgs(*images, fig_x=15, fig_y=7, axis=None):
+"""This function displays any required number of images using matplotlib."""
+    
+    image_list = list(images)
+    
+    number_images = len(image_list)
+    number_rows = int(np.ceil(number_images / 3))
+
+    plt.figure(figsize=(fig_x, fig_y))
+    
+    for i, image in enumerate(image_list):
+        plt.subplot(number_rows, 3, i + 1)
+        plt.title(f"Image {i + 1}")
+        
+        if axis == 'off':
+            plt.axis('off')
+            
+        if len(image.shape) == 3:
+            plt.imshow(image[:, :, ::-1])
+        else:
+            plt.imshow(image, cmap='gray')
+            
+    print(f"Number of images: {number_images}")
