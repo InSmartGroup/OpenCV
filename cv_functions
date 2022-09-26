@@ -1,3 +1,11 @@
+"""
+Note that you need to have the following libraries installed prior to using these functions:
+1. cv2
+2. numpy as np
+3. matplotlib.pyplot as plt
+"""
+
+
 # Display 1 image
 def show_1img(image, name='Source image', fig_x=4, fig_y=4, axis=None):
 """This function displays 1 image using matplotlib.
