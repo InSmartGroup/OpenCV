@@ -1,0 +1,130 @@
+import cv2
+import numpy as np
+
+# Create lists to store the points
+r = 15
+i = 0
+
+# Read the source image, specify display window
+source = cv2.imread("blemish1.jpg", 1)
+source = cv2.resize(source, None, fx=0.3, fy=0.3)
+
+cv2.namedWindow("Blemish Removal")
+
+# Create an image copy
+dummy = source.copy()
+
+# Set mouse callback
+cv2.setMouseCallback("Blemish Removal", remove_blemish)
+
+# Define image processing functions
+# Select a blemish patch using mouse
+def selected_blemish(x, y, r):
+    global i
+    crop_image = source[y:(y + 2 * r), x:(x + 2 * r)]     
+    return best_patch(x, y, r)
+
+
+# Get the best gradient patch around the blemish
+def best_patch(x, y, r):
+    # Nearby patches in all 8 directions
+    patches = {}
+
+    key_1 = dict_append(x + 2 * r, y)
+    patches['Key1'] = (x + 2 * r, y, key_1[0], key_1[1])
+
+    key_2 = dict_append(x + 2 * r, y + r)
+    patches['Key2'] = (x + 2 * r, y + r, key_2[0], key_2[1])
+
+    key_3 = dict_append(x - 2 * r, y)
+    patches['Key3'] = (x - 2 * r, y, key_3[0], key_3[1])
+
+    key_4 = dict_append(x - 2 * r, y - r)
+    patches['Key4'] = (x - 2 * r, y - r, key_4[0], key_4[1])
+
+    key_5 = dict_append(x, y + 2 * r)
+    patches['Key5'] = (x, y + 2 * r, key_5[0], key_5[1])
+
+    key_6 = dict_append(x + r, y + 2 * r)
+    patches['Key6'] = (x + r, y + 2 * r, key_6[0], key_6[1])
+
+    key_7 = dict_append(x, y - 2 * r)
+    patches['Key7'] = (x, y - 2 * r, key_7[0], key_7[1])
+
+    key_8 = dict_append(x - r, y - 2 * r)
+    patches['Key8'] = (x - r, y - 2 * r, key_8[0], key_8[1])
+
+    # Print patches
+    find_low_x = {}
+    find_low_y = {}
+    for key, (x, y, gx, gy) in patches.items():
+        find_low_x[key] = gx
+
+    for key, (x, y, gx, gy) in patches.items():
+        find_low_y[key] = gy
+
+    y_key_min = min(find_low_y.keys(), key=(lambda k: find_low_y[k]))
+    x_key_min = min(find_low_x.keys(), key=(lambda k: find_low_x[k]))
+
+    if x_key_min == y_key_min:
+        return patches[x_key_min][0], patches[x_key_min][1]
+    else:
+        return patches[x_key_min][0], patches[x_key_min][1]
+
+    
+# Get X and Y gradients
+def dict_append(x,y):
+    crop_image = source[y:(y + 2 * r), x:(x + 2 * r)]    
+    gradient_x, gradient_y = sobel_filter(crop_image)
+    return gradient_x, gradient_y
+
+
+# Apply Sobel filter
+def sobel_filter(crop_image):
+    sobel_x_64f = cv2.Sobel(crop_image, cv2.CV_64F, 1, 0, ksize=3)
+    abs_sobel_x_64f = np.absolute(sobel_x_64f)
+    sobel_x_uint8 = np.uint8(abs_sobel_x_64f)
+    gradient_x = np.mean(sobel_x_uint8)
+
+    sobel_y_64f = cv2.Sobel(crop_image, cv2.CV_64F, 0, 1, ksize=3)
+    abs_sobel_y_64f = np.absolute(sobel_y_64f)
+    sobel_y_uint8 = np.uint8(abs_sobel_y_64f)
+    gradient_y = np.mean(sobel_y_uint8)
+    
+    return gradient_x, gradient_y
+
+
+# Remove the blemish
+def remove_blemish(action, x, y, flags, userdata):
+    global r, source
+    # Event will occur when the LMB is pressed
+    if action == cv2.EVENT_LBUTTONDOWN:
+        # Mark the center
+        blemish_location = (x, y)    
+        new_x, new_y = selected_blemish(x, y, r)
+        new_patch = source[new_y:(new_y + 2 * r), new_x:(new_x + 2 * r)]
+        cv2.imwrite("New_patch.jpg", new_patch)
+        # Create a mask for the new patch 
+        mask = 255 * np.ones(new_patch.shape, new_patch.dtype) 
+        source = cv2.seamlessClone(new_patch, source, mask, blemish_location, cv2.NORMAL_CLONE) 
+        cv2.imshow("Blemish Removal",source)
+
+    # Event will occur when the LMB is released
+    elif action == cv2.EVENT_LBUTTONUP:
+        cv2.imshow("Blemish Removal",source)
+
+
+# Loop the script until break
+while True:
+    cv2.imshow("Blemish Removal", source)
+    key = cv2.waitKey(1) & 0xFF
+    
+    # Copy the source image
+    if key == ord('C') or key == ord('c'):
+        source = dummy.copy()
+    
+    # Break the loop
+    elif key == 27 or key == ord('Q') or key == ord('q'):
+        break
+        
+cv2.destroyAllWindows()
