@@ -1,0 +1,82 @@
+import cv2
+import numpy as np
+
+# Create a video capture object
+video_reader = cv2.VideoCapture(0)
+
+# Check if the video reader is open
+if video_reader.isOpened:
+    print('Success.')
+else:
+    print('Failed to open the webcam.')
+    
+# Specify window name
+window_name = "Real time color detection"
+cv2.namedWindow(window_name)
+cv2.resizeWindow(window_name, 320, 320)
+
+# Specify frame parameters
+frame_width = 640
+frame_height = 480
+video_reader.set(3, frame_width)
+video_reader.set(4, frame_height)
+
+# Define trackbar functions
+def empty():
+    pass
+
+# Create trackbars
+cv2.createTrackbar("Hue Min", window_name, 0, 180, empty)
+cv2.createTrackbar("Hue Max", window_name, 180, 180, empty)
+cv2.createTrackbar("Saturation Min", window_name, 0, 255, empty)
+cv2.createTrackbar("Saturation Max", window_name, 255, 255, empty)
+cv2.createTrackbar("Value Min", window_name, 0, 255, empty)
+cv2.createTrackbar("Value Max", window_name, 255, 255, empty)
+
+
+# Process the webcam stream
+while True:
+    has_frames, frame = video_reader.read()
+    
+    if not has_frames:
+        break
+        
+    # Mirror the frame gorizontally
+    frame = cv2.flip(frame, 1)
+    
+    # Convert the frame into several color spaces for future processing
+    frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    
+    # Define trackbar positions
+    hue_min = cv2.getTrackbarPos("Hue Min", window_name)
+    hue_max = cv2.getTrackbarPos("Hue Max", window_name)
+    saturation_min = cv2.getTrackbarPos("Saturation Min", window_name)
+    saturation_max = cv2.getTrackbarPos("Saturation Max", window_name)
+    value_min = cv2.getTrackbarPos("Value Min", window_name)
+    value_max = cv2.getTrackbarPos("Value Max", window_name)
+    
+    # Define lower and upper color values to segment
+    lower = np.array([hue_min, saturation_min, value_min])
+    upper = np.array([hue_max, saturation_max, value_max])
+    
+    # Create a mask for a specified color space range
+    mask = cv2.inRange(frame_hsv, lower, upper)
+    result = cv2.bitwise_and(frame, frame, mask=mask)
+    mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
+    
+    # Create combined frame
+    frames_stacked = np.hstack([frame, result])
+    
+    # Specify keyboard input
+    key = cv2.waitKey(1)
+    
+    # Break the loop
+    if key == 27 or key == ord('Q') or key == ord('q'):
+        break
+        
+    # Display the output
+    cv2.imshow('Color Detection Output', frames_stacked)
+    
+cv2.destroyAllWindows()
+video_reader.release()
