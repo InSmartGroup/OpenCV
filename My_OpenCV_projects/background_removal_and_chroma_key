@@ -1,0 +1,93 @@
+import cv2
+import numpy as np
+import mediapipe as mp
+from cvzone.SelfiSegmentationModule import SelfiSegmentation as selfie
+
+
+##########################################################################
+# Please note that this code involves changing only 3 background images  #
+# If you need to add more images as a background, please adjust the code #
+# Please also make adjustments to backgound images directory             #
+##########################################################################
+
+
+# Create a video capture object
+video_capture = cv2.VideoCapture(0)
+
+# Check if the webcam has opened
+if video_capture.isOpened:
+    print('Success.')
+else:
+    print('Failed to access the webcam.')
+    
+# Specify the webcam frame parameters
+video_capture.set(3, 640)
+video_capture.set(4, 480)
+
+# Create a segmentation object
+segmentor = selfie()
+
+# Define background modes
+CHROMAKEY = 0
+IMAGE = 1
+mode = CHROMAKEY
+
+# Image index is used to change the background
+image_index = 1
+
+
+while True:
+    # Read a background image
+    image_background = cv2.imread(f"Background images/{image_index}.jpg")
+    
+    # Read the webcam stream
+    has_frame, frame = video_capture.read()
+    
+    # Consider breaking the loop if reading a video file
+    if not has_frame:
+        break
+    
+    # Mirror the frame
+    frame = cv2.flip(frame, 1)
+    
+    # Toggle chroma key mode
+    if mode == CHROMAKEY:
+        frame_bg = segmentor.removeBG(frame, (0, 255, 0), threshold=0.55)
+        
+    # Toggle image background mode
+    elif mode == IMAGE:
+        image_background = cv2.resize(image_background, (640, 480))
+        frame_bg = segmentor.removeBG(frame, image_background, threshold=0.55)
+    
+    # Specify the keyboard input
+    key = cv2.waitKey(1)
+    
+    # Break the loop
+    if key == 27 or key == ord('Q') or key == ord('q'):
+        break
+    
+    # Switch modes
+    elif key == ord('C') or key == ord('c'):
+        mode = CHROMAKEY
+        
+    elif key == ord('I') or key == ord('i'):
+        mode = IMAGE
+        
+    elif key == ord('A') or key == ord('a'):
+        if image_index > 1:
+            image_index -= 1
+        
+    elif key == ord('D') or key == ord('d'):
+        if image_index < 3:
+            image_index += 1
+    
+    
+    # Stack images
+    frame_stacked = np.hstack([frame, frame_bg])
+    
+    # Display the result
+    cv2.imshow('Background Removal', frame_stacked)
+        
+        
+cv2.destroyAllWindows()
+video_capture.release()
